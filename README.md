@@ -2,7 +2,7 @@
 
 A telling-time game for young kids: a real kid's wristwatch, Lulu the bunny, and 10 levels (numbers, the two hands, o'clock, half past, story levels).
 
-Open `index.html` in a browser to play. It works straight from disk; no web server needed.
+Play it online at https://gerrych.github.io/lulu-pink-watch/, or open `index.html` in a browser. It works straight from disk; no web server needed.
 
 ## Files
 
