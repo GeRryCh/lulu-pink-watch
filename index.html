@@ -1,0 +1,1224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lulu's Pink Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Andika:wght@400;700&family=Fredoka:wght@500;600;700&display=swap">
+<style>
+:root{
+  /* Layout: one-screen game. Title, then a level map, then levels: the pink watch on the left, Lulu the bunny with a speech bubble and the answer area on the right. Portrait screens stack the watch on top. */
+  --bg:#FFE4EF; --bg-dot:#FFD2E3;
+  --card:#FFF8FB; --ink:#561637; --ink-soft:#87506B;
+  --hour:#D81B60; --hour-deep:#A0124A; --hour-soft:#FFD7E7;
+  --minute:#7B3FE4; --minute-deep:#5A27B5; --minute-soft:#EFE6FF;
+  --gold:#FFB400; --good:#178A5C; --try:#B35300;
+  --edge:#F6B3CC;
+  --display:"Fredoka","Arial Rounded MT Bold","Varela Round",system-ui,sans-serif;
+  --body:"Andika","Fredoka","Arial Rounded MT Bold",system-ui,sans-serif;
+  color-scheme: light;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0}
+body{background-color:var(--bg);background-image:radial-gradient(var(--bg-dot) 2.5px,transparent 3px);background-size:28px 28px;color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+button{font-family:var(--display);color:inherit}
+:focus-visible{outline:4px solid var(--gold);outline-offset:3px}
+.h{color:var(--hour);font-weight:700}
+.m{color:var(--minute);font-weight:700}
+
+.screen{position:fixed;inset:0;display:none;flex-direction:column}
+.screen.on{display:flex}
+
+/* shared bar */
+.bar{display:flex;align-items:center;gap:10px 14px;padding:12px clamp(12px,2.5vw,28px);flex-wrap:wrap}
+.bar-title{display:flex;align-items:center;gap:10px;margin:0;font:700 clamp(1.2rem,2.4vw,1.6rem)/1.1 var(--display);color:var(--hour-deep);min-width:0}
+.bar-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.icon-round{appearance:none;border:0;cursor:pointer;width:56px;height:56px;flex:none;border-radius:50%;display:grid;place-items:center;background:var(--card);color:var(--hour-deep);box-shadow:0 4px 0 var(--edge)}
+.icon-round:active{transform:translateY(3px);box-shadow:0 1px 0 var(--edge)}
+.icon-round[aria-pressed="false"]{color:#C9A2B4;background:#FBEFF4}
+.pill{display:inline-flex;align-items:center;gap:6px;min-height:52px;padding:0 16px;border-radius:999px;background:var(--card);box-shadow:0 4px 0 var(--edge);font:700 1.25rem var(--display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.lvl-num{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;background:var(--hour);color:#fff;font-size:1.2rem;flex:none}
+
+/* lulu */
+.lulu{display:block;width:100%;height:100%;overflow:visible}
+.lulu .eyes-happy,.lulu .mouth-open{display:none}
+.lulu.happy .eyes-happy{display:inline}
+.lulu.happy .eyes-open{display:none}
+.lulu.talking .mouth-open,.lulu.happy .mouth-open{display:inline}
+.lulu.talking .mouth-smile,.lulu.happy .mouth-smile{display:none}
+.lulu .mouth-open{transform-box:fill-box;transform-origin:center}
+.lulu.talking .mouth-open{animation:talk .22s ease-in-out infinite alternate}
+.lulu .eyes-open{transform-box:fill-box;transform-origin:center;animation:blink 5s infinite}
+.lulu .ear-r{transform-box:fill-box;transform-origin:50% 95%;animation:flop 3.6s ease-in-out infinite}
+.lulu .lulu-body{transform-box:fill-box;transform-origin:50% 100%}
+.lulu.happy .lulu-body{animation:hop .45s ease 3}
+.lulu.think .lulu-body{animation:tilt 1.1s ease}
+
+/* title */
+#scrTitle{align-items:center;justify-content:center;background:radial-gradient(circle at 50% 40%,#FFF6FA 0,#FFE4EF 55%,#FFD0E2 100%)}
+.title-wrap{display:flex;flex-direction:column;align-items:center;gap:10px;padding:16px;text-align:center}
+.title-lulu{width:clamp(170px,30vh,250px);height:clamp(210px,37vh,310px);animation:bob 3s ease-in-out infinite}
+.logo{margin:0;font:700 clamp(2.4rem,7vw,4.2rem)/1 var(--display);color:var(--hour);text-wrap:balance;text-shadow:0 4px 0 #fff}
+.logo span{color:var(--minute)}
+.tagline{margin:0 0 8px;font:500 clamp(1.1rem,2.6vw,1.4rem) var(--display);color:var(--ink-soft)}
+.play-btn{appearance:none;border:0;cursor:pointer;display:inline-flex;align-items:center;gap:12px;min-height:84px;padding:0 44px 0 34px;border-radius:999px;background:var(--hour);color:#fff;font:700 2.2rem var(--display);box-shadow:0 7px 0 var(--hour-deep),0 18px 40px rgba(216,27,96,.3);animation:breathe 2.2s ease-in-out infinite}
+.play-btn:active{transform:translateY(5px);box-shadow:0 2px 0 var(--hour-deep)}
+.grownups{position:absolute;left:0;right:0;bottom:14px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:8px 12px;padding:0 16px;font:500 .95rem var(--display);color:var(--ink-soft)}
+.text-btn{appearance:none;border:0;background:rgba(255,255,255,.7);cursor:pointer;min-height:40px;padding:0 14px;border-radius:999px;font:600 .95rem var(--display);color:var(--hour-deep)}
+.floaty{position:absolute;pointer-events:none;color:#FFB8D2;font-size:28px;animation:drift 9s ease-in-out infinite}
+
+/* map */
+#scrMap{background:linear-gradient(180deg,#FFE9F2 0%,#FFE4EF 40%,#F9D6FF 100%)}
+.map-box{position:relative;flex:1;min-height:0;margin:0 clamp(8px,2vw,24px) clamp(8px,2vw,24px);border-radius:36px;background:radial-gradient(ellipse at 20% 110%,#FFC2DA 0 30%,transparent 31%),radial-gradient(ellipse at 85% 115%,#E9D5FF 0 32%,transparent 33%),linear-gradient(180deg,#FFF5FA 0%,#FFE8F2 100%);box-shadow:inset 0 0 0 4px #fff,0 10px 30px rgba(216,27,96,.10);overflow:hidden}
+.cloud{position:absolute;width:120px;height:40px;border-radius:40px;background:#fff;opacity:.85}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:56px;height:56px;left:16px;top:-26px}
+.cloud::after{width:42px;height:42px;left:58px;top:-18px}
+#mapPath{position:absolute;inset:0;width:100%;height:100%}
+.node{position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:4px}
+.node-btn{appearance:none;border:0;cursor:pointer;position:relative;width:clamp(66px,9vmin,92px);height:clamp(66px,9vmin,92px);border-radius:50%;display:grid;place-items:center;background:#fff;box-shadow:0 6px 0 var(--edge),inset 0 0 0 5px var(--hour-soft);font-size:clamp(1.8rem,4vmin,2.5rem);line-height:1}
+.node-btn .n{position:absolute;top:-8px;right:-8px;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;background:var(--hour);color:#fff;font:700 1.05rem var(--display);box-shadow:0 2px 0 var(--hour-deep)}
+.node.next .node-btn{background:var(--hour-soft);box-shadow:0 6px 0 var(--hour-deep),inset 0 0 0 5px var(--hour);animation:breathe 1.8s ease-in-out infinite}
+.node.locked .node-btn{background:#F6E8EE;box-shadow:0 6px 0 #E8CFDA;cursor:default;filter:grayscale(.7);opacity:.75}
+.node.locked .node-btn .n{background:#C9A2B4;box-shadow:none}
+.node-stars{display:flex;gap:1px;height:22px}
+.node-stars svg{width:22px;height:22px}
+.node-name{font:600 .95rem/1.1 var(--display);color:var(--ink);background:rgba(255,255,255,.8);padding:3px 9px;border-radius:999px;white-space:nowrap}
+.map-lulu{position:absolute;width:clamp(64px,10vmin,96px);height:clamp(80px,12.5vmin,120px);transform:translate(-50%,-100%);pointer-events:none;transition:left .6s ease,top .6s ease;z-index:3}
+.map-lulu .lulu{animation:bob 2.4s ease-in-out infinite}
+
+/* play */
+#scrPlay{background:radial-gradient(circle at 30% 40%,#FFF4F9 0,#FFE4EF 60%)}
+.pips{display:flex;gap:6px;align-items:center}
+.pip{width:26px;height:26px;color:#F3C3D6}
+.pip.done{color:var(--hour);animation:pop .4s ease}
+.pip.now{color:#F59BBF}
+.arena{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:clamp(10px,2vw,28px);padding:0 clamp(12px,2.5vw,28px) clamp(12px,2vw,24px)}
+.stage{position:relative;min-height:0;border-radius:40px;background:radial-gradient(circle at 50% 46%,#FFFFFF 0,#FFF2F7 40%,#FFD6E6 100%);box-shadow:inset 0 0 0 3px #fff,0 10px 30px rgba(216,27,96,.12);display:flex;align-items:center;justify-content:center;padding:10px;overflow:hidden}
+#clock{display:block;width:100%;height:100%;touch-action:manipulation}
+#clock.draggable{touch-action:none}
+.side{min-height:0;display:flex;flex-direction:column;gap:14px;overflow-y:auto;padding:4px 4px 8px}
+.talk{display:flex;align-items:flex-end;gap:10px}
+.lulu-btn{appearance:none;border:0;background:none;padding:0;cursor:pointer;flex:none;width:clamp(84px,11vw,120px);height:clamp(104px,13.6vw,150px)}
+.bubble{position:relative;flex:1;min-width:0;background:var(--card);border-radius:28px;padding:16px 64px 16px 20px;box-shadow:0 5px 0 var(--edge),0 14px 30px rgba(216,27,96,.08);margin-bottom:18px}
+.bubble::before{content:"";position:absolute;left:-14px;bottom:22px;border-style:solid;border-width:12px 16px 12px 0;border-color:transparent var(--card) transparent transparent}
+.bubble p{margin:0;font:400 clamp(1.2rem,2vw,1.5rem)/1.42 var(--body);text-wrap:pretty}
+.bubble b{font-weight:700}
+.again{position:absolute;right:10px;top:10px;width:46px;height:46px;border-radius:50%;border:0;display:grid;place-items:center;background:var(--hour-soft);color:var(--hour-deep);cursor:pointer}
+.task{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.card{background:var(--card);border-radius:28px;padding:18px 22px;box-shadow:0 5px 0 var(--edge),0 14px 30px rgba(216,27,96,.08)}
+.target{display:flex;align-items:center;justify-content:space-between;gap:10px 16px;flex-wrap:wrap}
+.target .lbl{flex-basis:100%;margin:0;font:600 1.05rem var(--display);color:var(--ink-soft)}
+.words{font:600 clamp(1.9rem,4vw,2.7rem)/1.1 var(--display)}
+.digital{font:600 clamp(1.5rem,3vw,2rem)/1 var(--display);font-variant-numeric:tabular-nums;background:#fff;border-radius:18px;padding:10px 16px;box-shadow:inset 0 0 0 3px var(--hour-soft);white-space:nowrap}
+.digital .c{color:var(--ink-soft)}
+.event{display:flex;align-items:center;gap:16px}
+.event .pic{font-size:clamp(3rem,7vw,4.4rem);line-height:1;flex:none}
+.event .what{display:flex;flex-direction:column;gap:4px}
+.event .lab{font:600 1.15rem var(--display);color:var(--ink-soft)}
+.find{display:flex;align-items:center;justify-content:center;gap:18px}
+.find .lbl{font:600 1.6rem var(--display);color:var(--ink-soft)}
+.find .big{display:grid;place-items:center;width:110px;height:110px;border-radius:50%;background:#fff;box-shadow:inset 0 0 0 6px var(--hour-soft);font:700 4rem var(--display);color:var(--hour)}
+.which{display:flex;align-items:center;justify-content:center;gap:16px;font:600 1.8rem var(--display)}
+.which svg{width:84px;height:84px}
+.btn{appearance:none;border:0;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:68px;padding:0 30px;border-radius:999px;font:700 1.45rem var(--display);transition:transform .12s,box-shadow .12s}
+.btn:active{transform:translateY(4px)}
+.btn-go{background:var(--hour);color:#fff;box-shadow:0 5px 0 var(--hour-deep)}
+.btn-go:active{box-shadow:0 1px 0 var(--hour-deep)}
+.btn-done{background:var(--minute);color:#fff;box-shadow:0 5px 0 var(--minute-deep)}
+.btn-done:active{box-shadow:0 1px 0 var(--minute-deep)}
+.btn-soft{background:#fff;color:var(--hour-deep);box-shadow:0 5px 0 var(--edge),inset 0 0 0 2px var(--hour-soft)}
+.row{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.hint-line{margin:0;text-align:center;font:500 1.05rem var(--display);color:var(--ink-soft)}
+
+/* balloons */
+.balloons{display:flex;justify-content:center;align-items:flex-start;gap:clamp(8px,2vw,22px);padding:6px 0 34px}
+.balloon{appearance:none;border:0;background:none;padding:0;cursor:pointer;position:relative;width:clamp(100px,30%,150px);display:flex;flex-direction:column;align-items:center;animation:bobB 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+.b-body{position:relative;width:100%;aspect-ratio:5/6;border-radius:50% 50% 48% 48%/55% 55% 45% 45%;background:radial-gradient(circle at 32% 28%,rgba(255,255,255,.75) 0 9%,transparent 10%),radial-gradient(circle at 40% 35%,color-mix(in srgb,var(--c) 70%,#fff),var(--c) 70%);box-shadow:inset -8px -10px 0 rgba(0,0,0,.06),0 8px 18px rgba(120,20,70,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#fff;text-shadow:0 2px 0 rgba(90,10,50,.35)}
+.b-dig{font:700 clamp(1.6rem,3.4vw,2.2rem)/1 var(--display);font-variant-numeric:tabular-nums}
+.b-words{font:600 clamp(.85rem,1.6vw,1.05rem)/1.1 var(--display);text-align:center;padding:0 8px}
+.b-knot{width:16px;height:12px;margin-top:-3px;background:var(--c);clip-path:polygon(50% 0,100% 100%,0 100%)}
+.b-string{width:2px;height:40px;background:linear-gradient(#C98AA6,transparent)}
+.balloon.wrong{animation:shake .45s;opacity:.4;filter:grayscale(.6)}
+.balloon.wrong .b-body{transform:scale(.86)}
+.balloon.popped{animation:popOut .32s ease forwards}
+.balloon .b-body{transition:transform .25s}
+.balloon.reading .b-body{transform:scale(1.12)}
+
+/* overlay */
+.overlay{position:fixed;inset:0;z-index:20;display:grid;place-items:center;padding:16px;background:rgba(86,22,55,.35)}
+.done-card{width:min(520px,100%);background:var(--card);border-radius:36px;padding:22px 24px 26px;text-align:center;box-shadow:0 8px 0 var(--edge),0 30px 60px rgba(86,22,55,.25);animation:rise .4s ease}
+.done-lulu{width:120px;height:150px;margin:-80px auto 0}
+.done-card h2{margin:6px 0 4px;font:700 clamp(1.8rem,4vw,2.4rem)/1.1 var(--display);color:var(--hour)}
+.done-card p{margin:0 0 6px;font:500 1.2rem var(--display);color:var(--ink-soft)}
+.done-stars{display:flex;justify-content:center;gap:10px;margin:10px 0 18px}
+.done-stars svg{width:clamp(64px,14vw,86px);height:clamp(64px,14vw,86px);opacity:.25;transform:scale(.6);transition:opacity .3s,transform .4s cubic-bezier(.3,1.6,.5,1)}
+.done-stars svg.lit{opacity:1;transform:scale(1)}
+#fx{position:fixed;inset:0;pointer-events:none;z-index:30}
+.bit{position:absolute;line-height:1;transform:translate(-50%,-50%);animation:fly 1.2s cubic-bezier(.15,.75,.3,1) forwards}
+
+/* clock svg */
+#clock text{font-family:var(--display)}
+/* The watch photo shows its own numerals. A lit number gets a bubble with the number redrawn on top. */
+.num-tx{font-weight:700;fill:var(--hour-deep);opacity:0;transition:opacity .2s}
+.num-hl{fill:#FFF5F9;stroke:var(--hour);stroke-width:3.5;opacity:0;transition:opacity .2s}
+.num.on .num-hl,.num.flash .num-hl,.num.on .num-tx,.num.flash .num-tx{opacity:1}
+.num.nope .num-hl{opacity:.95;fill:#F3EAEE;stroke:#C4A5B4}
+.num.nope .num-tx{opacity:1;fill:#A88B99}
+.num-ring{fill:none;stroke:var(--minute);stroke-width:4;stroke-dasharray:7 5;opacity:0;transition:opacity .2s}
+.num.ring .num-ring{opacity:1}
+.hand{transition:opacity .35s}
+.hand.dim{opacity:.18}
+.hand-inner{transform-box:view-box;transform-origin:200px 260px}
+.hand.wiggle .hand-inner{animation:wiggle .5s ease-in-out 3}
+.hand.focus .hand-inner{filter:drop-shadow(0 0 6px #FFC94D) drop-shadow(0 0 2px #fff)}
+.hand.held .hand-inner{filter:drop-shadow(0 0 7px rgba(255,180,0,.95))}
+#clock.draggable .hand{cursor:grab}
+#clock.drag-hour #minuteHand{cursor:default}
+
+@keyframes talk{from{transform:scaleY(.35)}to{transform:scaleY(1.05)}}
+@keyframes blink{0%,94%,100%{transform:scaleY(1)}96%{transform:scaleY(.1)}}
+@keyframes flop{0%,100%{transform:rotate(0)}50%{transform:rotate(7deg)}}
+@keyframes hop{0%,100%{transform:translateY(0)}50%{transform:translateY(-14%)}}
+@keyframes tilt{0%,100%{transform:rotate(0)}30%{transform:rotate(-7deg)}70%{transform:rotate(5deg)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes bobB{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes breathe{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-18px)}}
+@keyframes wiggle{0%,100%{transform:rotate(0)}25%{transform:rotate(-9deg)}75%{transform:rotate(9deg)}}
+@keyframes pop{0%{transform:scale(1)}45%{transform:scale(1.35)}100%{transform:scale(1)}}
+@keyframes popOut{0%{transform:scale(1)}60%{transform:scale(1.25);opacity:.8}100%{transform:scale(1.5);opacity:0}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-9px)}40%{transform:translateX(9px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+@keyframes rise{from{transform:translateY(40px) scale(.9);opacity:0}to{transform:none;opacity:1}}
+@keyframes fly{0%{transform:translate(-50%,-50%) scale(.3);opacity:1}70%{opacity:1}100%{transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) rotate(var(--rot)) scale(1);opacity:0}}
+
+@media (max-width:760px),(max-aspect-ratio:5/6){
+  .arena{grid-template-columns:1fr;grid-template-rows:minmax(0,44%) minmax(0,1fr)}
+  .stage{border-radius:30px;padding:4px}
+  .lulu-btn{width:76px;height:94px}
+  .bubble{padding:12px 56px 12px 16px;margin-bottom:10px}
+  .bubble p{font-size:1.15rem}
+  .again{width:40px;height:40px}
+  .bar{padding:8px 12px;gap:8px}
+  .icon-round{width:48px;height:48px}
+  .pill{min-height:46px;font-size:1.1rem;padding:0 12px}
+  .bar-title{font-size:1.05rem}
+  .pip{width:20px;height:20px}
+  .btn{min-height:60px;font-size:1.3rem}
+  .find .big{width:84px;height:84px;font-size:3rem}
+}
+@media (max-width:520px){
+  #scrPlay .bar-title .lvl-name{display:none}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<section class="screen on" id="scrTitle" aria-label="Start">
+  <span class="floaty" style="left:8%;top:14%">♥</span>
+  <span class="floaty" style="right:10%;top:20%;animation-delay:-3s;color:#D9C2FF">★</span>
+  <span class="floaty" style="left:14%;bottom:22%;animation-delay:-5s;color:#D9C2FF">★</span>
+  <span class="floaty" style="right:14%;bottom:26%;animation-delay:-1.5s">♥</span>
+  <div class="title-wrap">
+    <div class="title-lulu" id="titleLulu"></div>
+    <h1 class="logo">Lulu’s <span>Pink Watch</span></h1>
+    <p class="tagline">A telling-time game</p>
+    <button type="button" class="play-btn" id="playBtn"><svg viewBox="0 0 24 24" width="40" height="40" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>Play</button>
+  </div>
+  <div class="grownups"><span>For grown-ups:</span><button type="button" class="text-btn" id="unlockBtn">Unlock all levels</button><button type="button" class="text-btn" id="resetBtn">Start over</button></div>
+</section>
+
+<section class="screen" id="scrMap" aria-label="Level map">
+  <header class="bar">
+    <button type="button" class="icon-round" id="mapHome" aria-label="Back to the start"></button>
+    <h2 class="bar-title">Pick a level</h2>
+    <div class="bar-right"><div class="pill" id="mapStars"></div><button type="button" class="icon-round tg-music" aria-label="Music"></button><button type="button" class="icon-round tg-voice" aria-label="Lulu’s voice"></button></div>
+  </header>
+  <div class="map-box" id="mapBox">
+    <div class="cloud" style="left:6%;top:9%"></div>
+    <div class="cloud" style="left:58%;top:5%;transform:scale(.8)"></div>
+    <div class="cloud" style="left:80%;top:48%;transform:scale(.7)"></div>
+    <svg id="mapPath" aria-hidden="true"></svg>
+    <div id="mapNodes"></div>
+    <div class="map-lulu" id="mapLulu"></div>
+  </div>
+</section>
+
+<section class="screen" id="scrPlay" aria-label="Level">
+  <header class="bar">
+    <button type="button" class="icon-round" id="toMap" aria-label="Back to the map"></button>
+    <h2 class="bar-title"><span class="lvl-num" id="lvlNum">1</span><span class="lvl-name" id="lvlName"></span></h2>
+    <div class="pips" id="pips" aria-hidden="true"></div>
+    <div class="bar-right"><button type="button" class="icon-round tg-music" aria-label="Music"></button><button type="button" class="icon-round tg-voice" aria-label="Lulu’s voice"></button></div>
+  </header>
+  <div class="arena">
+    <div class="stage" id="stage"><svg id="clock" viewBox="-24 -50 468 620" role="img" aria-label="Lulu’s watch"></svg></div>
+    <div class="side">
+      <div class="talk">
+        <button type="button" class="lulu-btn" id="luluBtn" aria-label="Hear Lulu again"></button>
+        <div class="bubble"><p id="say" aria-live="polite"></p><button type="button" class="again" id="againBtn" aria-label="Hear it again"></button></div>
+      </div>
+      <div class="task" id="task"></div>
+    </div>
+  </div>
+</section>
+
+<div class="overlay" id="doneOverlay" hidden>
+  <div class="done-card" role="dialog" aria-modal="true" aria-labelledby="doneTitle">
+    <div class="done-lulu" id="doneLulu"></div>
+    <h2 id="doneTitle">Level complete!</h2>
+    <p id="doneSub"></p>
+    <div class="done-stars" id="doneStars"></div>
+    <div class="row">
+      <button type="button" class="btn btn-soft" id="doneMap">Map</button>
+      <button type="button" class="btn btn-soft" id="doneAgain">Play again</button>
+      <button type="button" class="btn btn-go" id="doneNext">Next level</button>
+    </div>
+  </div>
+</div>
+<div id="fx" aria-hidden="true"></div>
+
+<script>
+(function () {
+'use strict';
+/* ================= utilities ================= */
+var CX = 200, CY = 260, NUM_R = 116;
+var reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+function $(s, r) { return (r || document).querySelector(s); }
+function $$(s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); }
+function sleep(ms) { return new Promise(function (r) { setTimeout(r, ms); }); }
+function mod(a, n) { return ((a % n) + n) % n; }
+function fx(n) { return Math.round(n * 100) / 100; }
+function rnd(n) { return Math.floor(Math.random() * n); }
+function pick(a) { return a[rnd(a.length)]; }
+function polar(r, deg) { var a = deg * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; }
+function shuffle(a) { for (var i = a.length - 1; i > 0; i--) { var j = rnd(i + 1), t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+var SAVE = {
+  get: function (k, d) { try { var v = localStorage.getItem('luluwatch.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set: function (k, v) { try { localStorage.setItem('luluwatch.' + k, JSON.stringify(v)); } catch (e) {} }
+};
+var settings = { voice: SAVE.get('voice', true), music: SAVE.get('music', true) };
+var progress = SAVE.get('progress', null) || { stars: [], unlockAll: false };
+function saveProgress() { SAVE.set('progress', progress); }
+
+/* ================= time words ================= */
+var NUMW = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten', 'eleven', 'twelve'];
+function hourOf(t) { var h = Math.floor(mod(Math.round(t), 720) / 60); return h === 0 ? 12 : h; }
+function minOf(t) { return mod(Math.round(t), 60); }
+function toT(h, m) { return mod(h, 12) * 60 + m; }
+function timeKey(t) { return 't_' + hourOf(t) + '_' + (minOf(t) === 30 ? '30' : '00'); }
+function wordsHTML(t) { var H = hourOf(t), m = minOf(t); return m === 30 ? '<span class="m">half past</span> <span class="h">' + H + '</span>' : '<span class="h">' + H + '</span> o’clock'; }
+function wordsPlain(t) { var H = hourOf(t), m = minOf(t); return m === 30 ? 'half past ' + H : H + ' o’clock'; }
+function digitalHTML(t) { var m = minOf(t); return '<span class="h">' + hourOf(t) + '</span><span class="c">:</span><span class="m">' + (m < 10 ? '0' : '') + m + '</span>'; }
+function digitalPlain(t) { var m = minOf(t); return hourOf(t) + ':' + (m < 10 ? '0' : '') + m; }
+function colorize(s) {
+  return s.replace(/(short heart hand|short hour hand|short hand|hour hand|heart hand)/gi, '<span class="h">$1</span>')
+          .replace(/(long star hand|long minute hand|long hand|minute hand|star hand)/gi, '<span class="m">$1</span>');
+}
+
+/* ================= Lulu's lines =================
+   Every line has a key. If audio/manifest.json lists a recording for the key, the recording plays;
+   otherwise the browser's voice reads the text. */
+var LINES = {
+  hello: "Hi! I'm Lulu, and this is my pink watch! Will you help me learn to tell the time?",
+  map: "Pick a level on the map. Let's play!",
+  lets_go: "Let's go!",
+  yay1: 'Yay!', yay2: 'Great job!', yay3: 'You did it!', yay4: 'Wow, amazing!', yay5: "You're a superstar!", yay6: 'Hooray!',
+  oops1: 'Oops! Try again!', oops2: 'Almost! Try again.', oops3: "Hmm, not quite. Let's try again!",
+  done3: "Hooray! Three stars! You're amazing!",
+  done2: 'Great job! You got two stars!',
+  done1: "You did it! One star! Let's practice some more.",
+  locked: 'That level is still locked. Finish the one before it first!',
+  all_done: "You finished every level! You're a real time expert!",
+  intro1: "My watch has numbers all the way around, from one to twelve. Let's find them!",
+  intro2a: 'My watch has two hands.',
+  intro2b: 'The short hand, with the heart, is the hour hand.',
+  intro2c: 'The long hand, with the star, is the minute hand.',
+  intro2d: 'Can you find them?',
+  intro3a: 'Look! The long star hand points straight up, to twelve.',
+  intro3b: "That means o'clock!",
+  intro3c: 'The short heart hand points to the hour.',
+  intro3d: 'Your turn! Drag the heart hand to set the time.',
+  intro4: 'Look at my watch, then pop the balloon with the same time!',
+  intro5: 'Good morning! Help me get ready for my day. Set my watch for each thing I do!',
+  intro6: 'When the long hand goes half way around, down to six, we say half past. The short hand is between two numbers!',
+  intro7: 'Now you set half past! Put the long star hand on six, and the short heart hand just past the hour.',
+  intro8: "O'clock and half past, all mixed up! Look carefully, then pop the right balloon.",
+  intro9: "Let's plan my afternoon! Set my watch for each fun thing I do.",
+  intro10: "It's my birthday party! Help me with all the times, and let's celebrate!",
+  find_num: 'Find the number',
+  tap_hour: "Tap the short hand. That's the hour hand, with the heart!",
+  tap_min: "Tap the long hand. That's the minute hand, with the star!",
+  was_min: "That's the long minute hand. Find the short one, with the heart!",
+  was_hour: "That's the short hour hand. Find the long one, with the star!",
+  make_it: 'Can you make it',
+  set_watch: 'Can you set my watch?',
+  pop_prompt: 'What time is it on my watch? Pop the right balloon!',
+  hint_star12: 'Move the long star hand up to twelve.',
+  hint_star6: 'Move the long star hand down to six.',
+  hint_heart_to: 'Move the short heart hand to',
+  hint_heart_past: 'Move the short heart hand just past',
+  look_short: 'Look at the short hand. Which number is it pointing to?',
+  look_long: 'Look at the long hand. Is it pointing up to twelve, or down to six?',
+  look_between: "Look at the short hand. It's between two numbers. Which number did it just go past?",
+  again: "Let's try that one again!",
+  s_wake: 'I wake up at', s_breakfast: 'I eat breakfast at', s_school: 'I go to kindergarten at', s_snack: 'I have a yummy snack at', s_lunch: 'I eat lunch at',
+  s_park: 'I play at the park at', s_icecream: 'I eat ice cream at', s_bath: 'I take a bubble bath at', s_story: 'We read a bedtime story at', s_sleep: 'I go to sleep at',
+  s_party: 'My birthday party starts at', s_cake: 'We eat birthday cake at', s_dance: 'We dance and sing at', s_bye: 'My friends go home at'
+};
+for (var ln = 1; ln <= 12; ln++) {
+  LINES['n_' + ln] = NUMW[ln];
+  LINES['t_' + ln + '_00'] = NUMW[ln] + " o'clock";
+  LINES['t_' + ln + '_30'] = 'half past ' + NUMW[ln];
+}
+
+/* ================= icons ================= */
+var I = {
+  speaker: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a4.5 4.5 0 0 1 0 7M18.6 6a8 8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  mute: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16.5 9.5l5 5M21.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>',
+  music: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="3" fill="currentColor"/><circle cx="17.5" cy="16" r="3" fill="currentColor"/></svg>',
+  musicOff: '<svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M9 18V6l11-2v12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><circle cx="6.5" cy="18" r="3" fill="currentColor"/><circle cx="17.5" cy="16" r="3" fill="currentColor"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>',
+  home: '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M3.5 11L12 4l8.5 7M6 9.5V20h4.5v-5h3v5H18V9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  map: '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M3.5 6.5l5.5-2.5 6 2.5 5.5-2.5v13.5L15 20l-6-2.5-5.5 2.5z" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/><path d="M9 4v13.5M15 6.5V20" stroke="currentColor" stroke-width="2.2"/></svg>',
+  check: '<svg viewBox="0 0 24 24" width="30" height="30" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  right: '<svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M9 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  pip: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21C5 15.5 2.5 12.4 2.5 8.6 2.5 5.7 4.8 3.5 7.6 3.5c1.8 0 3.4.9 4.4 2.4 1-1.5 2.6-2.4 4.4-2.4 2.8 0 5.1 2.2 5.1 5.1 0 3.8-2.5 6.9-9.5 12.4z" fill="currentColor"/></svg>',
+  starOn: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="#FFB400" stroke="#E09600" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  starOff: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" fill="#fff" stroke="#EBC3D3" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+  heartHand: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="25" y="26" width="10" height="30" rx="5" fill="#D81B60"/><path d="M30 42C10 28 10 10 22 10c4 0 6.5 2.5 8 5 1.5-2.5 4-5 8-5 12 0 12 18-8 32z" fill="#D81B60" stroke="#fff" stroke-width="2.5"/></svg>',
+  starHand: '<svg viewBox="0 0 60 60" aria-hidden="true"><rect x="27" y="22" width="6" height="36" rx="3" fill="#7B3FE4"/><path d="M30 3l5.6 11.4 12.6 1.8-9.1 8.9 2.1 12.5L30 31.7l-11.2 5.9 2.1-12.5-9.1-8.9 12.6-1.8z" fill="#7B3FE4" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/></svg>'
+};
+
+function luluSVG() {
+  return '<svg class="lulu" viewBox="0 0 200 250" aria-hidden="true"><g class="lulu-body">' +
+    '<g class="ear-l"><ellipse cx="70" cy="62" rx="21" ry="56" fill="#fff" stroke="#F2B3CA" stroke-width="3" transform="rotate(-14 70 62)"/><ellipse cx="71" cy="68" rx="10" ry="40" fill="#FFA3C6" transform="rotate(-14 71 68)"/></g>' +
+    '<g class="ear-r"><ellipse cx="130" cy="62" rx="21" ry="56" fill="#fff" stroke="#F2B3CA" stroke-width="3" transform="rotate(14 130 62)"/><ellipse cx="129" cy="68" rx="10" ry="40" fill="#FFA3C6" transform="rotate(14 129 68)"/></g>' +
+    '<path d="M56 250C56 206 76 186 100 186S144 206 144 250Z" fill="#FF8FB7"/>' +
+    '<path d="M84 190l16 14 16-14" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<circle cx="66" cy="232" r="13" fill="#fff" stroke="#F2B3CA" stroke-width="3"/><circle cx="134" cy="232" r="13" fill="#fff" stroke="#F2B3CA" stroke-width="3"/>' +
+    '<rect x="53" y="214" width="26" height="9" rx="4.5" fill="#D81B60"/><circle cx="66" cy="218.5" r="6.5" fill="#fff" stroke="#D81B60" stroke-width="2.5"/>' +
+    '<ellipse cx="100" cy="142" rx="64" ry="55" fill="#fff" stroke="#F2B3CA" stroke-width="3"/>' +
+    '<g transform="translate(140 96) rotate(16)"><path d="M0 0L-20-12V12Z" fill="#D81B60" stroke="#D81B60" stroke-width="3" stroke-linejoin="round"/><path d="M0 0L20-12V12Z" fill="#D81B60" stroke="#D81B60" stroke-width="3" stroke-linejoin="round"/><circle r="6.5" fill="#FF5C93"/></g>' +
+    '<ellipse cx="64" cy="160" rx="12" ry="7.5" fill="#FF9EC2" opacity=".65"/><ellipse cx="136" cy="160" rx="12" ry="7.5" fill="#FF9EC2" opacity=".65"/>' +
+    '<g class="eyes-open"><ellipse cx="78" cy="138" rx="8.5" ry="11" fill="#3A1030"/><ellipse cx="122" cy="138" rx="8.5" ry="11" fill="#3A1030"/><circle cx="81" cy="133" r="3.2" fill="#fff"/><circle cx="125" cy="133" r="3.2" fill="#fff"/></g>' +
+    '<g class="eyes-happy" fill="none" stroke="#3A1030" stroke-width="4.5" stroke-linecap="round"><path d="M69 141Q78 129 87 141"/><path d="M113 141Q122 129 131 141"/></g>' +
+    '<ellipse cx="100" cy="153" rx="6" ry="4.2" fill="#E25F96"/>' +
+    '<path class="mouth-smile" d="M90 162Q100 172 110 162" fill="none" stroke="#3A1030" stroke-width="3.2" stroke-linecap="round"/>' +
+    '<ellipse class="mouth-open" cx="100" cy="166" rx="7.5" ry="6.5" fill="#8A1C4A"/>' +
+    '</g></svg>';
+}
+var Lulu = {
+  all: function () { return $$('.lulu'); },
+  talk: function (on) { this.all().forEach(function (l) { l.classList.toggle('talking', !!on); }); },
+  mood: function (cls, ms) {
+    this.all().forEach(function (l) {
+      l.classList.remove('happy', 'think'); void l.getBoundingClientRect(); l.classList.add(cls);
+      clearTimeout(l._m); l._m = setTimeout(function () { l.classList.remove(cls); }, ms || 1500);
+    });
+  }
+};
+
+/* ================= sound: voice, music, effects ================= */
+var Sound = (function () {
+  var ctx = null, master, musicGain, voiceGain, sfxGain;
+  var sources = null, buffers = {}, pending = {}, loadingStarted = false;
+  var sayToken = 0, curSrc = null, musicMode = null, musicSrc = null, synthTimer = null;
+
+  /* Recordings come from audio/pack.js (base64 clips, loaded with a script tag, so it also works
+     when index.html is opened straight from disk). Without the pack, audio/manifest.json is fetched
+     (needs a web server). Each source becomes a function that returns the file's bytes. */
+  function fromUrl(url) { return function () { return fetch(url).then(function (r) { if (!r.ok) throw 0; return r.arrayBuffer(); }); }; }
+  function fromB64(b64) {
+    return function () {
+      var bin = atob(b64), u = new Uint8Array(bin.length);
+      for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+      return Promise.resolve(u.buffer);
+    };
+  }
+  function useSources(m, make) {
+    if (!m) return;
+    var v = m.voice || {}, out = { music: m.music ? make(m.music) : null, voice: {} };
+    Object.keys(v).forEach(function (k) { out.voice[k] = make(v[k]); });
+    sources = out; loadAll();
+  }
+  function viaManifest() {
+    fetch('audio/manifest.json', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (m) { useSources(m, fromUrl); }).catch(function () {});
+  }
+  (function () {
+    var sc = document.createElement('script');
+    sc.src = 'audio/pack.js';
+    sc.onload = function () { if (window.LULU_AUDIO) { useSources(window.LULU_AUDIO, fromB64); window.LULU_AUDIO = null; } else viaManifest(); };
+    sc.onerror = viaManifest;
+    document.head.appendChild(sc);
+  })();
+
+  function unlock() {
+    if (!ctx) {
+      try {
+        var AC = window.AudioContext || window.webkitAudioContext;
+        ctx = new AC();
+        master = ctx.createGain(); master.gain.value = 1; master.connect(ctx.destination);
+        musicGain = ctx.createGain(); musicGain.gain.value = 0; musicGain.connect(master);
+        voiceGain = ctx.createGain(); voiceGain.gain.value = 1; voiceGain.connect(master);
+        sfxGain = ctx.createGain(); sfxGain.gain.value = .7; sfxGain.connect(master);
+      } catch (e) { ctx = null; }
+    }
+    if (ctx && ctx.state === 'suspended') { try { ctx.resume(); } catch (e) {} }
+    loadAll();
+  }
+  function decode(ab) { return new Promise(function (res, rej) { ctx.decodeAudioData(ab, res, rej); }); }
+  function load(key, getBytes) {
+    pending[key] = Promise.resolve().then(getBytes).then(decode)
+      .then(function (b) { buffers[key] = b; if (key === '__music' && musicMode === 'synth') { stopMusic(); startMusic(); } })
+      .catch(function () {});
+    return pending[key];
+  }
+  function loadAll() {
+    if (!sources || !ctx || loadingStarted) return;
+    loadingStarted = true;
+    var v = sources.voice;
+    Object.keys(v).forEach(function (k) { load(k, v[k]); });
+    if (sources.music) load('__music', sources.music);
+  }
+
+  /* ---- voice ---- */
+  var ttsVoice = null;
+  function pickVoice() {
+    if (ttsVoice) return ttsVoice;
+    try {
+      var vs = speechSynthesis.getVoices();
+      var prefs = ['Samantha', 'Google US English', 'Karen', 'Moira', 'Tessa', 'Serena', 'Microsoft Aria', 'Microsoft Jenny', 'Victoria', 'Allison', 'Ava'];
+      for (var i = 0; i < prefs.length; i++) for (var j = 0; j < vs.length; j++) if (vs[j].name.indexOf(prefs[i]) === 0) return (ttsVoice = vs[j]);
+      for (j = 0; j < vs.length; j++) if (/^en[-_]US/i.test(vs[j].lang)) return (ttsVoice = vs[j]);
+      for (j = 0; j < vs.length; j++) if (/^en/i.test(vs[j].lang)) return (ttsVoice = vs[j]);
+    } catch (e) {}
+    return null;
+  }
+  try { speechSynthesis.getVoices(); speechSynthesis.onvoiceschanged = function () { ttsVoice = null; }; } catch (e) {}
+  function tts(text, my) {
+    return new Promise(function (res) {
+      var done = false; function fin() { if (!done) { done = true; res(); } }
+      try {
+        var u = new SpeechSynthesisUtterance(text), v = pickVoice();
+        if (v) u.voice = v; u.lang = (v && v.lang) || 'en-US'; u.rate = .9; u.pitch = 1.2;
+        u.onend = fin; u.onerror = fin;
+        speechSynthesis.speak(u);
+      } catch (e) { fin(); }
+      setTimeout(fin, 1500 + text.length * 75);
+      (function poll() { if (done) return; if (my !== sayToken) return fin(); setTimeout(poll, 120); })();
+    });
+  }
+  function playBuf(buf, my) {
+    return new Promise(function (res) {
+      if (!ctx || my !== sayToken) return res();
+      var s = ctx.createBufferSource(); s.buffer = buf; s.connect(voiceGain);
+      curSrc = s; s.onended = function () { if (curSrc === s) curSrc = null; res(); };
+      try { s.start(); } catch (e) { res(); }
+    });
+  }
+  function stopVoice() {
+    sayToken++;
+    try { speechSynthesis.cancel(); } catch (e) {}
+    if (curSrc) { try { curSrc.onended = null; curSrc.stop(); } catch (e) {} curSrc = null; }
+    Lulu.talk(false); duck(false);
+  }
+  async function say(keys) {
+    stopVoice();
+    var my = sayToken;
+    if (!settings.voice) return;
+    if (!Array.isArray(keys)) keys = [keys];
+    Lulu.talk(true); duck(true);
+    var i = 0;
+    while (i < keys.length && my === sayToken) {
+      var k = keys[i];
+      if (!buffers[k] && pending[k]) await Promise.race([pending[k], sleep(3000)]);
+      if (my !== sayToken) break;
+      if (buffers[k]) { await playBuf(buffers[k], my); i++; await sleep(60); continue; }
+      var txt = [];
+      while (i < keys.length && !buffers[keys[i]]) { txt.push(LINES[keys[i]] || keys[i]); i++; }
+      await tts(txt.join(' '), my);
+    }
+    if (my === sayToken) { Lulu.talk(false); duck(false); }
+  }
+
+  /* ---- music ---- */
+  function musicLevel() { return musicMode === 'file' ? .32 : .16; }
+  var ducked = false;
+  function musicTarget() { return ducked ? musicLevel() * .35 : musicLevel(); }
+  function duck(on) {
+    ducked = !!on;
+    if (!ctx || !musicMode) return;
+    musicGain.gain.setTargetAtTime(musicTarget(), ctx.currentTime, .15);
+  }
+  // an original little waltz for music box: [midi, beats]
+  var MEL = [[76,1],[79,1],[84,1],[83,1],[81,1],[79,1],[81,1],[77,1],[74,1],[79,3],
+             [76,1],[79,1],[84,1],[86,1],[84,1],[81,1],[79,1],[76,1],[74,1],[72,3],
+             [81,1],[84,1],[81,1],[79,1],[76,1],[79,1],[77,1],[81,1],[77,1],[76,3],
+             [74,1],[76,1],[77,1],[79,1],[84,1],[83,1],[81,1],[74,1],[83,1],[84,3]];
+  var CH = { C: [48, [60, 64, 67]], G: [43, [59, 62, 67]], Dm: [50, [57, 62, 65]], F: [41, [57, 60, 65]] };
+  var BARS = ['C','G','Dm','G','C','F','G','C','F','C','F','C','Dm','G','G','C'];
+  var BEAT = .62, EVENTS = [], LOOP = BARS.length * 3;
+  (function build() {
+    var b = 0; MEL.forEach(function (n) { EVENTS.push({ b: b, m: n[0], d: n[1], k: 'mel' }); b += n[1]; });
+    BARS.forEach(function (c, i) { var ch = CH[c]; EVENTS.push({ b: i * 3, m: ch[0], d: 2, k: 'bass' }); [1, 2].forEach(function (o) { ch[1].forEach(function (mm) { EVENTS.push({ b: i * 3 + o, m: mm, d: .5, k: 'pad' }); }); }); });
+    EVENTS.sort(function (x, y) { return x.b - y.b; });
+  })();
+  function hz(m) { return 440 * Math.pow(2, (m - 69) / 12); }
+  function note(ev, t) {
+    var f = hz(ev.m), len = ev.k === 'mel' ? .9 + ev.d * .45 : ev.k === 'bass' ? 1.1 : .35;
+    var vol = ev.k === 'mel' ? .33 : ev.k === 'bass' ? .28 : .045;
+    [[1, ev.k === 'pad' ? 'triangle' : 'sine', 1], [2, 'sine', ev.k === 'mel' ? .22 : 0], [3, 'sine', ev.k === 'mel' ? .06 : 0]].forEach(function (p) {
+      if (!p[2]) return;
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = p[1]; o.frequency.value = f * p[0];
+      g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(vol * p[2], t + .012);
+      g.gain.exponentialRampToValueAtTime(.0001, t + len / p[0]);
+      o.connect(g); g.connect(musicGain); o.start(t); o.stop(t + len + .05);
+    });
+  }
+  var loopStart = 0, idx = 0;
+  function pump() {
+    var ahead = ctx.currentTime + .3;
+    while (true) {
+      var ev = EVENTS[idx], t = loopStart + ev.b * BEAT;
+      if (t > ahead) break;
+      if (t > ctx.currentTime - .05) note(ev, t);
+      idx++; if (idx >= EVENTS.length) { idx = 0; loopStart += LOOP * BEAT; }
+    }
+  }
+  var musicWaiting = false, musicWaited = false;
+  function startMusic() {
+    if (!ctx || !settings.music || musicMode) return;
+    // A recorded track is still decoding: wait for it (once, up to 4 s) instead of starting the synth tune.
+    if (!buffers.__music && pending.__music && !musicWaited) {
+      if (!musicWaiting) {
+        musicWaiting = true;
+        Promise.race([pending.__music, sleep(4000)]).then(function () { musicWaiting = false; musicWaited = true; startMusic(); });
+      }
+      return;
+    }
+    if (buffers.__music) {
+      musicMode = 'file';
+      musicSrc = ctx.createBufferSource(); musicSrc.buffer = buffers.__music; musicSrc.loop = true; musicSrc.connect(musicGain); musicSrc.start();
+    } else {
+      musicMode = 'synth'; loopStart = ctx.currentTime + .15; idx = 0; synthTimer = setInterval(pump, 80); pump();
+    }
+    musicGain.gain.cancelScheduledValues(ctx.currentTime);
+    musicGain.gain.setValueAtTime(.0001, ctx.currentTime);
+    musicGain.gain.linearRampToValueAtTime(musicTarget(), ctx.currentTime + 1.2);
+  }
+  function stopMusic() {
+    if (!musicMode) return;
+    if (musicSrc) { try { musicSrc.stop(); } catch (e) {} musicSrc = null; }
+    clearInterval(synthTimer); synthTimer = null;
+    if (ctx) { musicGain.gain.cancelScheduledValues(ctx.currentTime); musicGain.gain.setValueAtTime(0, ctx.currentTime); }
+    musicMode = null;
+  }
+
+  /* ---- effects ---- */
+  function tones(list) {
+    if (!ctx) return;
+    var now = ctx.currentTime;
+    list.forEach(function (n) {
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = n[4] || 'triangle'; o.frequency.setValueAtTime(n[0], now + n[1]);
+      if (n[5]) o.frequency.exponentialRampToValueAtTime(n[5], now + n[1] + n[2]);
+      g.gain.setValueAtTime(.0001, now + n[1]); g.gain.exponentialRampToValueAtTime(n[3] || .14, now + n[1] + .015);
+      g.gain.exponentialRampToValueAtTime(.0001, now + n[1] + n[2]);
+      o.connect(g); g.connect(sfxGain); o.start(now + n[1]); o.stop(now + n[1] + n[2] + .05);
+    });
+  }
+  var sfx = {
+    yay: function () { tones([[523.25, 0, .25], [659.25, .08, .25], [783.99, .16, .3], [1046.5, .24, .6]]); },
+    oops: function () { tones([[392, 0, .2, .1, 'sine'], [311, .15, .35, .1, 'sine']]); },
+    tick: function () { tones([[1900, 0, .03, .03, 'triangle']]); },
+    tap: function () { tones([[880, 0, .09, .08, 'sine', 1320]]); },
+    pop: function () {
+      if (!ctx) return;
+      var len = .16, buf = ctx.createBuffer(1, Math.floor(ctx.sampleRate * len), ctx.sampleRate), d = buf.getChannelData(0);
+      for (var i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 4);
+      var s = ctx.createBufferSource(), f = ctx.createBiquadFilter(), g = ctx.createGain();
+      f.type = 'bandpass'; f.frequency.value = 1800; g.gain.value = .9;
+      s.buffer = buf; s.connect(f); f.connect(g); g.connect(sfxGain); s.start();
+      tones([[700, 0, .12, .12, 'sine', 180]]);
+    },
+    fanfare: function () { tones([[523.25, 0, .18], [659.25, .14, .18], [783.99, .28, .18], [1046.5, .42, .5], [783.99, .62, .16], [1046.5, .76, .9]]); },
+    star: function (i) { tones([[880 * Math.pow(1.26, i), 0, .35, .13, 'sine'], [1760 * Math.pow(1.26, i), .02, .25, .05, 'sine']]); }
+  };
+  return { unlock: unlock, say: say, stopVoice: stopVoice, startMusic: startMusic, stopMusic: stopMusic, sfx: sfx };
+})();
+
+/* ================= the watch ================= */
+var Clock = (function () {
+  var svg = $('#clock');
+  var total = 610, anim = null, drag = null;
+  var opts = { drag: 'none', trail: false, snap: 5, preferHands: false };
+  function noop() {}
+  var defaults = { change: noop, grab: noop, dragend: noop, numtap: noop, handtap: noop };
+  var handlers = {};
+  function resetHandlers() { for (var k in defaults) handlers[k] = defaults[k]; }
+  resetHandlers();
+  var HEART = 'M0 30C-40 4-30-30 0-12C30-30 40 4 0 30Z';
+  function starD(cx, cy, R, r) { var d = ''; for (var i = 0; i < 10; i++) { var rad = i % 2 ? r : R, a = (i * 36 - 90) * Math.PI / 180; d += (i ? 'L' : 'M') + fx(cx + rad * Math.cos(a)) + ' ' + fx(cy + rad * Math.sin(a)); } return d + 'Z'; }
+
+  var s = '<defs>' +
+    '<linearGradient id="gFade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".11" stop-color="#fff" stop-opacity="1"/><stop offset=".91" stop-color="#fff" stop-opacity="1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>' +
+    '<mask id="mWatch" maskUnits="userSpaceOnUse" x="-24" y="-50" width="468" height="620"><rect x="-24" y="-50" width="468" height="620" fill="url(#gFade)"/></mask>' +
+    '<filter id="fHand" x="-80%" y="-20%" width="260%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#561637" flood-opacity=".28"/></filter>' +
+    '</defs>';
+  // A real kid's watch (photo, hands removed), 2 px per unit: dial centre at (CX, CY), numerals on the NUM_R circle.
+  // The viewBox is wider than the old drawn watch so the photo's case and crown fit. Strap ends fade out.
+  s += '<image href="img/watch.webp" x="-24" y="-50" width="468" height="620" preserveAspectRatio="none" mask="url(#mWatch)"/>';
+  s += '<path id="trail" d="" fill="#7B3FE4" fill-opacity=".13" stroke="#7B3FE4" stroke-opacity=".35" stroke-width="2" stroke-linejoin="round"/>';
+  s += '<g id="nums">';
+  for (var n = 1; n <= 12; n++) { var np = polar(NUM_R, n * 30); s += '<g class="num" data-n="' + n + '"><circle class="num-hl" cx="' + fx(np[0]) + '" cy="' + fx(np[1]) + '" r="27"/><circle class="num-ring" cx="' + fx(np[0]) + '" cy="' + fx(np[1]) + '" r="27"/><text class="num-tx" x="' + fx(np[0]) + '" y="' + fx(np[1] + 1) + '" text-anchor="middle" dominant-baseline="central" font-size="40">' + n + '</text></g>'; }
+  s += '</g>';
+  s += '<g id="hourHand" class="hand"><g class="hand-inner" filter="url(#fHand)">' +
+    '<path d="' + HEART + '" transform="translate(' + CX + ' ' + (CY - 78) + ') scale(.52)" fill="#D81B60" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>' +
+    '<rect x="' + (CX - 7) + '" y="' + (CY - 70) + '" width="14" height="88" rx="7" fill="#D81B60"/>' +
+    '<ellipse cx="' + (CX - 8) + '" cy="' + (CY - 86) + '" rx="3.2" ry="2.2" fill="#fff" opacity=".8" transform="rotate(-30 ' + (CX - 8) + ' ' + (CY - 86) + ')"/>' +
+    '</g></g>';
+  s += '<g id="minuteHand" class="hand"><g class="hand-inner" filter="url(#fHand)">' +
+    '<rect x="' + (CX - 4) + '" y="' + (CY - 134) + '" width="8" height="156" rx="4" fill="#7B3FE4"/>' +
+    '<path d="' + starD(CX, CY - 142, 14, 6.2) + '" fill="#7B3FE4" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"/>' +
+    '</g></g>';
+  s += '<g>';
+  for (var q = 0; q < 6; q++) { var cp = polar(8.5, q * 60); s += '<circle cx="' + fx(cp[0]) + '" cy="' + fx(cp[1]) + '" r="6.4" fill="#FF9FC4"/>'; }
+  s += '<circle cx="' + CX + '" cy="' + CY + '" r="6.2" fill="#fff" stroke="#D81B60" stroke-width="2.4"/></g>';
+  svg.innerHTML = s;
+
+  var hourEl = $('#hourHand'), minEl = $('#minuteHand'), trailEl = $('#trail'), numEls = {};
+  $$('.num', svg).forEach(function (el) { numEls[+el.getAttribute('data-n')] = el; });
+
+  function time() { return mod(Math.round(total), 720); }
+  function render() {
+    var ha = mod(total, 720) / 2, ma = mod(total, 60) * 6;
+    hourEl.setAttribute('transform', 'rotate(' + fx(ha) + ' ' + CX + ' ' + CY + ')');
+    minEl.setAttribute('transform', 'rotate(' + fx(ma) + ' ' + CX + ' ' + CY + ')');
+    if (opts.trail && ma > .3) {
+      var e = polar(153, Math.min(ma, 359.8));
+      trailEl.setAttribute('d', 'M' + CX + ' ' + CY + 'L' + CX + ' ' + (CY - 153) + 'A153 153 0 ' + (ma > 180 ? 1 : 0) + ' 1 ' + fx(e[0]) + ' ' + fx(e[1]) + 'Z');
+    } else trailEl.setAttribute('d', '');
+  }
+  function emit() { handlers.change(time()); }
+  function cancelAnim() { if (!anim) return; cancelAnimationFrame(anim.raf); var r = anim.res, tg = anim.target; anim = null; total = mod(tg, 720); render(); r(false); }
+  function setTime(t) { cancelAnim(); total = mod(t, 720); render(); emit(); }
+  function animateTo(target, o) {
+    o = o || {};
+    cancelAnim();
+    var start = total, delta = mod(target - start, 720);
+    if (o.shortest && delta > 360) delta -= 720;
+    if (Math.abs(delta) < .001 && o.full) delta = 720;
+    var dur = o.duration !== undefined ? o.duration : Math.min(2200, Math.max(450, 300 + Math.abs(delta) * 8));
+    if (Math.abs(delta) < .001 || reduceMotion) { total = mod(target, 720); render(); emit(); return Promise.resolve(true); }
+    return new Promise(function (res) {
+      var t0 = performance.now();
+      function step(now) {
+        var p = Math.min(1, (now - t0) / dur), e = p < .5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2;
+        total = start + delta * e; render();
+        if (p < 1) anim.raf = requestAnimationFrame(step);
+        else { total = mod(target, 720); render(); anim = null; emit(); res(true); }
+      }
+      anim = { raf: requestAnimationFrame(step), res: res, target: target };
+    });
+  }
+  function setOpts(o) {
+    for (var k in o) opts[k] = o[k];
+    svg.classList.toggle('draggable', opts.drag !== 'none');
+    svg.classList.toggle('drag-hour', opts.drag === 'hour');
+    if (opts.drag !== 'none') { svg.setAttribute('tabindex', '0'); } else svg.removeAttribute('tabindex');
+    render();
+  }
+  function focus(which) {
+    hourEl.classList.toggle('dim', which === 'minute'); minEl.classList.toggle('dim', which === 'hour');
+    hourEl.classList.toggle('focus', which === 'hour'); minEl.classList.toggle('focus', which === 'minute');
+  }
+  function wiggle(which) {
+    var el = which === 'hour' ? hourEl : minEl;
+    el.classList.remove('wiggle'); void svg.getBoundingClientRect(); el.classList.add('wiggle');
+    clearTimeout(el._w); el._w = setTimeout(function () { el.classList.remove('wiggle'); }, 1600);
+  }
+  function highlight(list) { for (var k in numEls) numEls[k].classList.toggle('on', list.indexOf(+k) > -1); }
+  function ring(list) { for (var k in numEls) numEls[k].classList.toggle('ring', list.indexOf(+k) > -1); }
+  function flashNum(n, cls) { var el = numEls[n]; if (!el) return; cls = cls || 'flash'; el.classList.add(cls); clearTimeout(el['_' + cls]); el['_' + cls] = setTimeout(function () { el.classList.remove(cls); }, 900); }
+  function numPoint(n) { var p = polar(NUM_R, n * 30), r = svg.getBoundingClientRect(), m = svg.getScreenCTM(); if (!m) return [r.left + r.width / 2, r.top + r.height / 2]; var pt = svg.createSVGPoint(); pt.x = p[0]; pt.y = p[1]; var q = pt.matrixTransform(m); return [q.x, q.y]; }
+  function centerPoint() { var m = svg.getScreenCTM(), pt = svg.createSVGPoint(); pt.x = CX; pt.y = CY; if (!m) { var r = svg.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; } var q = pt.matrixTransform(m); return [q.x, q.y]; }
+
+  function pt(e) { var p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY; var m = svg.getScreenCTM(); return m ? p.matrixTransform(m.inverse()) : { x: 0, y: 0 }; }
+  function angleAt(p) { return mod(Math.atan2(p.x - CX, -(p.y - CY)) * 180 / Math.PI, 360); }
+  function segDist(p, ang, len) {
+    var tp = polar(len, ang), vx = tp[0] - CX, vy = tp[1] - CY, wx = p.x - CX, wy = p.y - CY;
+    var tt = Math.max(0, Math.min(1, (wx * vx + wy * vy) / (vx * vx + vy * vy)));
+    return Math.hypot(wx - vx * tt, wy - vy * tt);
+  }
+  function whichHand(p) {
+    var wide = opts.preferHands ? 10 : 0;
+    var dH = segDist(p, mod(total, 720) / 2, 94), dM = segDist(p, mod(total, 60) * 6, 158);
+    var okH = dH < 30 + wide + (opts.drag === 'hour' ? 6 : 0), okM = dM < 26 + wide && opts.drag !== 'hour';
+    if (okH && okM) return Math.hypot(p.x - CX, p.y - CY) > 90 ? 'minute' : (dH <= dM ? 'hour' : 'minute');
+    return okH ? 'hour' : okM ? 'minute' : (opts.drag === 'hour' ? null : (dM < 26 + wide ? 'minute' : null));
+  }
+  function moveTo(p) {
+    var a = angleAt(p), cur = time(), h = Math.floor(cur / 60), m = cur % 60;
+    if (drag.hand === 'minute') {
+      var sn = opts.snap || 1, nm = mod(Math.round(a / 6 / sn) * sn, 60);
+      if (m >= 45 && nm < 15) h = mod(h + 1, 12); else if (m < 15 && nm >= 45) h = mod(h - 1, 12);
+      m = nm;
+    } else h = mod(Math.round(a / 30 - m / 60), 12);
+    var nt = h * 60 + m;
+    if (nt !== cur) { total = nt; render(); emit(); Sound.sfx.tick(); }
+  }
+  svg.addEventListener('pointerdown', function (e) {
+    if (e.button > 0) return;
+    var p = pt(e), hand = whichHand(p);
+    var canDrag = opts.drag !== 'none' && hand && (opts.drag === 'both' || hand === 'hour');
+    if (canDrag) {
+      e.preventDefault(); cancelAnim(); handlers.grab();
+      drag = { hand: hand, id: e.pointerId };
+      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      (hand === 'hour' ? hourEl : minEl).classList.add('held');
+      moveTo(p); return;
+    }
+    if (opts.preferHands && hand) { handlers.handtap(hand); return; }
+    for (var n = 1; n <= 12; n++) { var np = polar(NUM_R, n * 30); if (Math.hypot(p.x - np[0], p.y - np[1]) < 30) { handlers.numtap(n); return; } }
+    if (hand) handlers.handtap(hand);
+  });
+  svg.addEventListener('pointermove', function (e) { if (drag && e.pointerId === drag.id) moveTo(pt(e)); });
+  function endDrag(e) { if (!drag || e.pointerId !== drag.id) return; hourEl.classList.remove('held'); minEl.classList.remove('held'); drag = null; handlers.dragend(time()); }
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+  svg.addEventListener('keydown', function (e) {
+    if (opts.drag === 'none') return;
+    var map = { ArrowUp: 60, ArrowDown: -60 };
+    if (opts.drag === 'both') { map.ArrowRight = opts.snap; map.ArrowLeft = -opts.snap; } else { map.ArrowRight = 60; map.ArrowLeft = -60; }
+    if (e.key in map) { e.preventDefault(); cancelAnim(); total = mod(time() + map[e.key], 720); render(); emit(); Sound.sfx.tick(); }
+    else if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handlers.dragend(time()); }
+  });
+  render();
+  return { time: time, setTime: setTime, animateTo: animateTo, setOpts: setOpts, focus: focus, wiggle: wiggle, highlight: highlight, ring: ring,
+    flashNum: flashNum, numPoint: numPoint, centerPoint: centerPoint, handlers: handlers, resetHandlers: resetHandlers };
+})();
+
+/* ================= effects ================= */
+function burstAt(x, y, n) {
+  if (reduceMotion) return;
+  var host = $('#fx'), colors = ['#D81B60', '#7B3FE4', '#FFB400', '#FF7FAF'];
+  for (var i = 0; i < n; i++) {
+    var b = document.createElement('span'); b.className = 'bit';
+    b.textContent = i % 3 === 0 ? '★' : '♥︎';
+    var a = Math.random() * Math.PI * 2, d = 80 + Math.random() * 160;
+    b.style.left = x + 'px'; b.style.top = y + 'px';
+    b.style.setProperty('--dx', (Math.cos(a) * d).toFixed(1) + 'px');
+    b.style.setProperty('--dy', (Math.sin(a) * d).toFixed(1) + 'px');
+    b.style.setProperty('--rot', Math.round(Math.random() * 120 - 60) + 'deg');
+    b.style.color = colors[i % 4]; b.style.fontSize = Math.round(16 + Math.random() * 24) + 'px';
+    b.style.animationDelay = Math.round(Math.random() * 120) + 'ms';
+    host.appendChild(b);
+    (function (el) { setTimeout(function () { el.remove(); }, 1500); })(b);
+  }
+}
+function burstEl(el, n) { var r = el.getBoundingClientRect(); burstAt(r.left + r.width / 2, r.top + r.height / 2, n); }
+
+/* ================= levels ================= */
+var MORNING = [
+  { line: 's_wake', t: toT(7, 0), pic: '⏰', label: 'Wake up' },
+  { line: 's_breakfast', t: toT(8, 0), pic: '🥞', label: 'Breakfast' },
+  { line: 's_school', t: toT(9, 0), pic: '🎒', label: 'Kindergarten' },
+  { line: 's_snack', t: toT(10, 0), pic: '🍓', label: 'Snack' },
+  { line: 's_lunch', t: toT(12, 0), pic: '🥪', label: 'Lunch' }
+];
+var AFTERNOON = [
+  { line: 's_park', t: toT(4, 0), pic: '🌳', label: 'Park' },
+  { line: 's_icecream', t: toT(4, 30), pic: '🍦', label: 'Ice cream' },
+  { line: 's_bath', t: toT(6, 30), pic: '🛁', label: 'Bubble bath' },
+  { line: 's_story', t: toT(7, 30), pic: '📖', label: 'Story time' },
+  { line: 's_sleep', t: toT(8, 0), pic: '🌙', label: 'Sleep' }
+];
+var PARTY = [
+  { line: 's_party', t: toT(2, 0), pic: '🎉', label: 'Party starts' },
+  { read: true },
+  { line: 's_cake', t: toT(3, 30), pic: '🎂', label: 'Birthday cake' },
+  { read: true },
+  { line: 's_dance', t: toT(4, 30), pic: '🎶', label: 'Dancing' },
+  { line: 's_bye', t: toT(5, 0), pic: '🎈', label: 'Bye-bye, friends' }
+];
+var LEVELS = [
+  { name: 'Find the Numbers', icon: '🔢', type: 'numbers', rounds: 6, intro: 'intro1', demo: 'count' },
+  { name: 'Two Hands', icon: '💗', type: 'hands', rounds: 6, intro: ['intro2a', 'intro2b', 'intro2c', 'intro2d'], demo: 'hands' },
+  { name: 'O’clock', icon: '🕒', type: 'set', drag: 'hour', times: 'oclock', rounds: 5, intro: ['intro3a', 'intro3b', 'intro3c', 't_2_00', 't_3_00', 'intro3d'], demo: 'oclock' },
+  { name: 'Balloon Pop', icon: '🎈', type: 'read', times: 'oclock', rounds: 5, intro: 'intro4' },
+  { name: 'Lulu’s Morning', icon: '☀️', type: 'story', drag: 'hour', story: MORNING, intro: 'intro5' },
+  { name: 'Half Past', icon: '🕞', type: 'read', times: 'half', rounds: 5, review: 1, intro: 'intro6', demo: 'half', trail: true },
+  { name: 'Half Past Helper', icon: '⭐', type: 'set', drag: 'both', times: 'half', rounds: 5, review: 1, intro: 'intro7', demo: 'half', trail: true },
+  { name: 'Mixed Balloons', icon: '🎈', type: 'read', times: 'mixed', rounds: 6, intro: 'intro8' },
+  { name: 'Lulu’s Afternoon', icon: '🍦', type: 'story', drag: 'both', story: AFTERNOON, intro: 'intro9' },
+  { name: 'Birthday Party', icon: '🎂', type: 'story', drag: 'both', story: PARTY, times: 'mixed', intro: 'intro10' }
+];
+function unlocked(i) { return progress.unlockAll || i === 0 || (progress.stars[i - 1] || 0) > 0; }
+function totalStars() { return progress.stars.reduce(function (a, b) { return a + (b || 0); }, 0); }
+function randTime(kind, avoid) {
+  var t;
+  do { var h = 1 + rnd(12), m = kind === 'half' ? 30 : kind === 'mixed' ? (Math.random() < .5 ? 30 : 0) : 0; t = toT(h, m); } while (avoid && avoid.indexOf(t) > -1);
+  return t;
+}
+function buildRounds(L) {
+  var out = [], used = [];
+  if (L.type === 'numbers') shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]).slice(0, L.rounds).forEach(function (n) { out.push({ kind: 'numbers', n: n }); });
+  else if (L.type === 'hands') { var w = shuffle(['hour', 'hour', 'hour', 'minute', 'minute', 'minute']); w.forEach(function (x) { out.push({ kind: 'hands', which: x }); }); }
+  else if (L.type === 'set' || L.type === 'read') {
+    // L.review rounds go back to o'clock in a half-past level, so the child keeps checking the long hand
+    var rev = shuffle(Array.from({ length: L.rounds - 1 }, function (_, k) { return k + 1; })).slice(0, L.review || 0);
+    for (var i = 0; i < L.rounds; i++) {
+      var isRev = rev.indexOf(i) > -1, t = randTime(isRev ? 'oclock' : L.times, used); used.push(t);
+      out.push({ kind: L.type, t: t, drag: L.drag, times: isRev ? 'mixed' : undefined });
+    }
+  }
+  else if (L.type === 'story') L.story.forEach(function (ev) {
+    if (ev.read) { var t2 = randTime(L.times || 'mixed', used); used.push(t2); out.push({ kind: 'read', t: t2, times: L.times }); }
+    else { used.push(ev.t); out.push({ kind: 'set', t: ev.t, drag: L.drag, ev: ev }); }
+  });
+  return out;
+}
+function readOptions(t, kind) {
+  var h = hourOf(t), m = minOf(t), c;
+  if (kind === 'oclock') c = [h + 1, h - 1, h + 6, h + 2, h - 3].map(function (x) { return toT(x, 0); });
+  else if (m === 30) return shuffle([t, toT(h + 1, 30), shuffle([toT(h, 0), toT(h - 1, 30), toT(h + 1, 0)])[0]]);
+  else c = [toT(h, 30), toT(h - 1, 30), toT(h + 1, 0), toT(h - 1, 0)];
+  c = shuffle(c.filter(function (x, i) { return x !== t && c.indexOf(x) === i; })).slice(0, 2);
+  return shuffle([t].concat(c));
+}
+
+/* ================= screens ================= */
+function showScreen(id) {
+  $$('.screen').forEach(function (s) { s.classList.toggle('on', s.id === id); });
+  if (id === 'scrMap') renderMap();
+}
+function updateToggles() {
+  $$('.tg-music').forEach(function (b) { b.innerHTML = settings.music ? I.music : I.musicOff; b.setAttribute('aria-pressed', String(settings.music)); });
+  $$('.tg-voice').forEach(function (b) { b.innerHTML = settings.voice ? I.speaker : I.mute; b.setAttribute('aria-pressed', String(settings.voice)); });
+}
+$$('.tg-music').forEach(function (b) { b.onclick = function () { Sound.unlock(); settings.music = !settings.music; SAVE.set('music', settings.music); updateToggles(); if (settings.music) Sound.startMusic(); else Sound.stopMusic(); }; });
+$$('.tg-voice').forEach(function (b) { b.onclick = function () { Sound.unlock(); settings.voice = !settings.voice; SAVE.set('voice', settings.voice); updateToggles(); if (!settings.voice) Sound.stopVoice(); else Sound.say('lets_go'); }; });
+
+/* ---- title ---- */
+$('#titleLulu').innerHTML = luluSVG();
+$('#playBtn').onclick = function () {
+  Sound.unlock(); Sound.startMusic(); Sound.sfx.tap();
+  showScreen('scrMap');
+  if (!SAVE.get('greeted', false)) { SAVE.set('greeted', true); Sound.say(['hello', 'map']); } else Sound.say('map');
+};
+$('#titleLulu').onclick = function () { Sound.unlock(); Lulu.mood('happy', 1500); Sound.say('hello'); };
+$('#unlockBtn').onclick = function () { progress.unlockAll = true; saveProgress(); this.textContent = 'All levels unlocked'; };
+$('#resetBtn').onclick = function () {
+  var b = this;
+  if (!b._armed) { b._armed = true; b.textContent = 'Tap again to start over'; setTimeout(function () { b._armed = false; b.textContent = 'Start over'; }, 4000); return; }
+  progress = { stars: [], unlockAll: false }; saveProgress(); SAVE.set('greeted', false);
+  b._armed = false; b.textContent = 'Progress cleared'; $('#unlockBtn').textContent = 'Unlock all levels';
+};
+
+/* ---- map ---- */
+$('#mapHome').innerHTML = I.home;
+$('#mapHome').onclick = function () { Sound.stopVoice(); showScreen('scrTitle'); };
+$('#mapLulu').innerHTML = luluSVG();
+var PTS_L = [[10,30],[29,40],[48,28],[67,40],[86,30],[86,74],[67,64],[48,76],[29,64],[10,74]];
+var PTS_P = [[25,9],[34,27],[25,45],[34,63],[25,81],[75,81],[66,63],[75,45],[66,27],[75,9]];
+function smoothPath(pts) {
+  var d = 'M' + pts[0][0] + ' ' + pts[0][1];
+  for (var i = 0; i < pts.length - 1; i++) {
+    var p0 = pts[i - 1] || pts[i], p1 = pts[i], p2 = pts[i + 1], p3 = pts[i + 2] || p2;
+    var c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
+    d += 'C' + fx(c1[0]) + ' ' + fx(c1[1]) + ' ' + fx(c2[0]) + ' ' + fx(c2[1]) + ' ' + fx(p2[0]) + ' ' + fx(p2[1]);
+  }
+  return d;
+}
+function renderMap() {
+  var box = $('#mapBox'), W = box.clientWidth, H = box.clientHeight;
+  if (!W || !H) return;
+  var P = W > H * .95 ? PTS_L : PTS_P;
+  var px = P.map(function (p) { return [p[0] * W / 100, p[1] * H / 100]; });
+  var d = smoothPath(px);
+  var svg = $('#mapPath'); svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+  svg.innerHTML = '<path d="' + d + '" fill="none" stroke="#fff" stroke-width="26" stroke-linecap="round"/><path d="' + d + '" fill="none" stroke="#FFB8D2" stroke-width="8" stroke-linecap="round" stroke-dasharray="1 20"/>';
+  var next = -1;
+  for (var i = 0; i < LEVELS.length; i++) if (unlocked(i) && !(progress.stars[i] > 0)) { next = i; break; }
+  var html = '';
+  LEVELS.forEach(function (L, i) {
+    var st = progress.stars[i] || 0, lock = !unlocked(i), cls = 'node' + (lock ? ' locked' : '') + (i === next ? ' next' : '');
+    var stars = ''; for (var k = 0; k < 3; k++) stars += k < st ? I.starOn : I.starOff;
+    html += '<div class="' + cls + '" style="left:' + P[i][0] + '%;top:' + P[i][1] + '%">' +
+      '<button type="button" class="node-btn" data-i="' + i + '" aria-label="Level ' + (i + 1) + ': ' + L.name + (lock ? ', locked' : ', ' + st + ' stars') + '">' +
+      '<span aria-hidden="true">' + (lock ? '🔒' : L.icon) + '</span><span class="n" aria-hidden="true">' + (i + 1) + '</span></button>' +
+      '<div class="node-stars" aria-hidden="true">' + stars + '</div>' +
+      '<div class="node-name" aria-hidden="true">' + L.name + '</div></div>';
+  });
+  $('#mapNodes').innerHTML = html;
+  $$('.node-btn').forEach(function (b) { b.onclick = function () { var i = +b.getAttribute('data-i'); Sound.unlock(); if (!unlocked(i)) { Sound.sfx.oops(); Sound.say('locked'); return; } Sound.sfx.tap(); startLevel(i); }; });
+  var at = next >= 0 ? next : LEVELS.length - 1;
+  var land = P === PTS_L, ml = $('#mapLulu'); ml.style.left = (P[at][0] + (P[at][0] > 50 ? -1 : 1) * (land ? 9 : 21)) + '%'; ml.style.top = (P[at][1] + (land ? 4 : 5)) + '%';
+  $('#mapStars').innerHTML = '<span style="width:28px;height:28px;display:inline-block">' + I.starOn + '</span>' + totalStars() + ' / ' + LEVELS.length * 3;
+}
+window.addEventListener('resize', function () { if ($('#scrMap').classList.contains('on')) renderMap(); });
+
+/* ---- play ---- */
+var G = { li: 0, L: null, rounds: [], round: 0, mistakes: 0, token: 0, solved: true, releases: 0, prompt: [], missedRound: false, retries: 0, prefix: null };
+$('#toMap').innerHTML = I.map;
+$('#againBtn').innerHTML = I.speaker;
+$('#luluBtn').innerHTML = luluSVG();
+$('#doneLulu').innerHTML = luluSVG();
+function replay() { Sound.unlock(); if (G.prompt.length) Sound.say(G.prompt); }
+$('#luluBtn').onclick = replay;
+$('#againBtn').onclick = replay;
+$('#toMap').onclick = function () { G.token++; Sound.stopVoice(); $('#doneOverlay').hidden = true; showScreen('scrMap'); };
+
+function bubble(html, keys) {
+  if (G.prefix) { html = LINES[G.prefix] + ' ' + html; keys = [G.prefix].concat(keys || []); G.prefix = null; }
+  $('#say').innerHTML = html; G.prompt = keys || [];
+  return keys && keys.length ? Sound.say(keys) : Promise.resolve();
+}
+function setPips() {
+  var h = ''; for (var i = 0; i < G.rounds.length; i++) h += '<span class="pip' + (i < G.round ? ' done' : i === G.round ? ' now' : '') + '">' + I.pip + '</span>';
+  $('#pips').innerHTML = h;
+}
+function resetWatch() {
+  Clock.resetHandlers(); Clock.focus(null); Clock.highlight([]); Clock.ring([]);
+  Clock.setOpts({ drag: 'none', trail: !!G.L.trail, preferHands: false, snap: 5 });
+}
+function startLevel(i) {
+  G.li = i; G.L = LEVELS[i]; G.rounds = buildRounds(G.L); G.round = 0; G.mistakes = 0; G.solved = true; G.retries = 0; G.prefix = null;
+  var tok = ++G.token;
+  $('#doneOverlay').hidden = true;
+  $('#lvlNum').textContent = i + 1; $('#lvlName').textContent = G.L.name;
+  showScreen('scrPlay'); setPips(); resetWatch();
+  // A list of intro keys is spoken one step at a time by runDemo, in time with the watch.
+  if (Array.isArray(G.L.intro)) { $('#say').innerHTML = ''; G.prompt = G.L.intro.slice(); }
+  else bubble(colorize(LINES[G.L.intro]), [G.L.intro]);
+  $('#task').innerHTML = '<div class="row"><button type="button" class="btn btn-go" id="goBtn">Let’s play! ' + I.right + '</button></div>';
+  $('#goBtn').onclick = function () { Sound.sfx.tap(); G.token++; playRound(); };
+  runDemo(G.L.demo, tok);
+}
+async function runDemo(kind, tok) {
+  function live() { return tok === G.token; }
+  // Show one line, speak it, then pause. Without voice, leave time to read it.
+  async function step(key, html) {
+    if (!live()) return;
+    $('#say').innerHTML = html || colorize(LINES[key]);
+    await Sound.say([key]);
+    if (live()) await sleep(settings.voice ? 450 : 900 + LINES[key].length * 45);
+  }
+  if (kind === 'count') {
+    await Clock.animateTo(toT(10, 10), { shortest: true }); await sleep(600);
+    for (var n = 1; n <= 12 && live(); n++) { Clock.highlight([n]); await sleep(330); }
+    if (live()) Clock.highlight([]);
+  } else if (kind === 'hands') {
+    Clock.animateTo(toT(4, 50), { shortest: true });
+    await step('intro2a');
+    if (!live()) return; Clock.focus('hour'); Clock.wiggle('hour'); await step('intro2b');
+    if (!live()) return; Clock.focus('minute'); Clock.wiggle('minute'); await step('intro2c');
+    if (!live()) return; Clock.focus(null); await step('intro2d');
+  } else if (kind === 'oclock') {
+    Clock.setTime(toT(2, 0)); Clock.ring([12]); Clock.wiggle('minute');
+    await step('intro3a');
+    await step('intro3b');
+    if (!live()) return; Clock.wiggle('hour'); Clock.highlight([2]); await step('intro3c');
+    await step('t_2_00', wordsHTML(toT(2, 0)) + '!');
+    if (!live()) return; Clock.highlight([]);
+    await Clock.animateTo(toT(3, 0), { duration: 2500 });
+    if (!live()) return; Clock.highlight([3]); await step('t_3_00', wordsHTML(toT(3, 0)) + '!');
+    await step('intro3d');
+  } else if (kind === 'half') {
+    Clock.setOpts({ trail: true }); Clock.setTime(toT(3, 0)); Clock.highlight([3]); await sleep(1800);
+    if (!live()) return; Clock.highlight([]);
+    await Clock.animateTo(toT(3, 30), { duration: 2600 });
+    if (live()) { Clock.ring([6]); Clock.highlight([3, 4]); }
+    if (!G.L.trail) Clock.setOpts({ trail: false });
+  } else {
+    await Clock.animateTo(toT(10, 10), { shortest: true });
+  }
+}
+function taskHTML(h) { $('#task').innerHTML = h; }
+function playRound() {
+  var r = G.rounds[G.round]; G.solved = false; G.releases = 0; G.missedRound = false;
+  G.prefix = r.retry ? 'again' : null;
+  var tok = ++G.token;
+  setPips(); resetWatch();
+  if (r.kind === 'numbers') roundNumbers(r, tok);
+  else if (r.kind === 'hands') roundHands(r, tok);
+  else if (r.kind === 'set') roundSet(r, tok);
+  else roundRead(r, tok);
+}
+async function won(keys, el) {
+  if (G.solved) return; G.solved = true;
+  var tok = ++G.token;
+  Sound.sfx.yay(); Lulu.mood('happy', 1800);
+  if (el) burstEl(el, 26); else { var c = Clock.centerPoint(); burstAt(c[0], c[1], 26); }
+  // A round with a mistake comes back once at the end of the level (at most two per level).
+  var r = G.rounds[G.round];
+  if (G.missedRound && !r.retry && G.retries < 2) { G.retries++; G.rounds.push(Object.assign({}, r, { retry: true })); }
+  G.round++; setPips();
+  var praise = 'yay' + (1 + rnd(6));
+  $('#say').innerHTML = LINES[praise];
+  await Promise.all([Sound.say([praise].concat(keys || [])), sleep(1300)]);
+  await sleep(350);
+  if (tok !== G.token) return;
+  if (G.round >= G.rounds.length) finishLevel(); else playRound();
+}
+function missed(html, keys) {
+  G.mistakes++; G.missedRound = true; Sound.sfx.oops(); Lulu.mood('think', 1100);
+  bubble(html, keys);
+}
+// A hint Lulu offers by herself (the child kept trying) is help, not a mistake.
+function nudge(html, keys) {
+  Lulu.mood('think', 1100);
+  bubble(html, keys);
+}
+
+/* numbers */
+function roundNumbers(r, tok) {
+  var n = r.n;
+  Clock.animateTo(toT(n + 4, mod(n + 8, 12) * 5), { shortest: true, duration: 800 });
+  bubble('Find the number <span class="h">' + n + '</span>!', ['find_num', 'n_' + n]);
+  taskHTML('<div class="card find"><span class="lbl">Find</span><span class="big">' + n + '</span></div><p class="hint-line">Tap the number on the watch.</p>');
+  Clock.handlers.numtap = function (k) {
+    if (G.solved || tok !== G.token) return;
+    if (k === n) { Clock.highlight([n]); var p = Clock.numPoint(n); won(['n_' + n]); burstAt(p[0], p[1], 14); }
+    else { Clock.flashNum(k, 'nope'); missed('That’s <b>' + k + '</b>. Find <span class="h">' + n + '</span>!', ['oops1', 'find_num', 'n_' + n]); }
+  };
+}
+/* hands */
+function roundHands(r, tok) {
+  var t; do { t = rnd(720); var ha = t / 2, ma = (t % 60) * 6, df = Math.abs(ha - ma); df = Math.min(df, 360 - df); } while (df < 80);
+  Clock.setOpts({ preferHands: true });
+  Clock.animateTo(t, { shortest: true, duration: 800 });
+  var isH = r.which === 'hour';
+  bubble(colorize(LINES[isH ? 'tap_hour' : 'tap_min']), [isH ? 'tap_hour' : 'tap_min']);
+  taskHTML('<div class="card which">' + (isH ? I.heartHand + '<span class="h">Short hand</span>' : I.starHand + '<span class="m">Long hand</span>') + '</div><p class="hint-line">Tap that hand on the watch.</p>');
+  Clock.handlers.handtap = function (h) {
+    if (G.solved || tok !== G.token) return;
+    if (h === r.which) { Clock.focus(h); won([]); }
+    else { Clock.wiggle(h); var k = h === 'minute' ? 'was_min' : 'was_hour'; missed(colorize(LINES[k]), [k]); }
+  };
+}
+/* set the watch */
+function roundSet(r, tok) {
+  var t = r.t, start;
+  if (r.drag === 'hour') { do { start = toT(1 + rnd(12), 0); } while (start === t); }
+  else { do { start = toT(1 + rnd(12), [0, 15, 30, 45][rnd(4)]); } while (start === t || Math.abs(start - t) < 60); }
+  Clock.setOpts({ drag: r.drag, snap: 5 });
+  Clock.animateTo(start, { shortest: true, duration: 700 });
+  var key = timeKey(t);
+  if (r.ev) {
+    bubble(LINES[r.ev.line] + ' <b>' + wordsHTML(t) + '</b>. Can you set my watch?', [r.ev.line, key, 'set_watch']);
+    taskHTML('<div class="card event"><span class="pic" aria-hidden="true">' + r.ev.pic + '</span><span class="what"><span class="lab">' + r.ev.label + '</span><span class="words">' + wordsHTML(t) + '</span></span><span class="digital" style="margin-left:auto">' + digitalHTML(t) + '</span></div>' +
+      '<div class="row"><button type="button" class="btn btn-done" id="doneBtn">' + I.check + 'Done!</button></div>');
+  } else {
+    bubble('Can you make it <b>' + wordsHTML(t) + '</b>?', ['make_it', key]);
+    taskHTML('<div class="card target"><p class="lbl">Make the watch say</p><span class="words">' + wordsHTML(t) + '</span><span class="digital">' + digitalHTML(t) + '</span></div>' +
+      '<div class="row"><button type="button" class="btn btn-done" id="doneBtn">' + I.check + 'Done!</button></div>' +
+      '<p class="hint-line">' + (r.drag === 'hour' ? 'Drag the heart hand, or tap a number.' : 'Drag both hands. Tap a number to move the heart hand.') + '</p>');
+  }
+  function correct() { return Clock.time() === t; }
+  function success() { Clock.setOpts({ drag: 'none' }); Clock.highlight([hourOf(t)]); Clock.ring([minOf(t) ? 6 : 12]); won([key]); }
+  function hint(auto) {
+    var TH = hourOf(t), TM = minOf(t), CM = minOf(Clock.time()), html, keys;
+    if (CM !== TM) { keys = [TM ? 'hint_star6' : 'hint_star12']; html = colorize(LINES[keys[0]]); Clock.wiggle('minute'); Clock.ring([TM ? 6 : 12]); }
+    else { keys = [TM ? 'hint_heart_past' : 'hint_heart_to', 'n_' + TH]; html = colorize(LINES[keys[0]]) + ' <span class="h">' + TH + '</span>.'; Clock.wiggle('hour'); Clock.highlight([TH]); }
+    if (auto) nudge(html, keys); else missed(html, ['oops' + (1 + rnd(3))].concat(keys));
+  }
+  Clock.handlers.dragend = function () {
+    if (G.solved || tok !== G.token) return;
+    if (correct()) return success();
+    G.releases++;
+    if (G.releases >= (r.drag === 'hour' ? 3 : 5)) { G.releases = 0; hint(true); }
+  };
+  Clock.handlers.numtap = function (n) {
+    if (G.solved || tok !== G.token) return;
+    Sound.sfx.tick();
+    Clock.animateTo(toT(n, r.drag === 'hour' ? 0 : Math.round(minOf(Clock.time()) / 5) * 5 % 60), { shortest: true, duration: 450 }).then(function (ok) { if (ok) Clock.handlers.dragend(); });
+  };
+  $('#doneBtn').onclick = function () { if (G.solved || tok !== G.token) return; if (correct()) success(); else { G.releases = 0; hint(false); } };
+}
+/* read the watch: balloons */
+var BCOL = ['#FF6FA5', '#A77BF5', '#FF9478'];
+function roundRead(r, tok) {
+  var t = r.t, kind = r.times || G.L.times || 'oclock';
+  Clock.animateTo(t, { shortest: true, duration: 900 });
+  var opts = readOptions(t, kind), reading = true;
+  var asked = bubble(colorize(LINES.pop_prompt), ['pop_prompt']);
+  G.prompt = G.prompt.concat(opts.map(timeKey));
+  taskHTML('<div class="balloons">' + opts.map(function (o, i) {
+    return '<button type="button" class="balloon" data-t="' + o + '" style="--c:' + BCOL[i] + ';--d:-' + (i * .7) + 's" aria-label="' + wordsPlain(o) + '">' +
+      '<span class="b-body"><span class="b-dig">' + digitalPlain(o) + '</span><span class="b-words">' + wordsPlain(o) + '</span></span><span class="b-knot"></span><span class="b-string"></span></button>';
+  }).join('') + '</div>');
+  $$('.balloon').forEach(function (b) {
+    b.onclick = function () {
+      if (G.solved || tok !== G.token || b.disabled) return;
+      reading = false;
+      var v = +b.getAttribute('data-t');
+      if (v === t) {
+        Sound.sfx.pop(); b.classList.add('popped'); $$('.balloon').forEach(function (x) { x.disabled = true; });
+        Clock.highlight([hourOf(t)]); Clock.ring([minOf(t) ? 6 : 12]);
+        won([timeKey(t)], b);
+      } else {
+        b.classList.add('wrong'); b.disabled = true;
+        var k = minOf(v) !== minOf(t) ? 'look_long' : minOf(t) === 30 ? 'look_between' : 'look_short';
+        Clock.wiggle(k === 'look_long' ? 'minute' : 'hour');
+        if (k === 'look_between') Clock.highlight([hourOf(t), hourOf(t) % 12 + 1]);
+        missed(colorize(LINES[k]), ['oops' + (1 + rnd(3)), k]);
+      }
+    };
+    b.addEventListener('pointerdown', function () { reading = false; });
+  });
+  // After the question, Lulu reads each balloon out loud, so a child who can't read yet can still choose.
+  (async function () {
+    var bs = $$('.balloon'), live = function () { return reading && !G.solved && tok === G.token; };
+    await asked;
+    if (live()) await sleep(300);
+    for (var i = 0; i < bs.length && live() && settings.voice; i++) {
+      bs[i].classList.add('reading');
+      await Sound.say([timeKey(opts[i])]);
+      bs[i].classList.remove('reading');
+      if (live()) await sleep(300);
+    }
+    bs.forEach(function (x) { x.classList.remove('reading'); });
+  })();
+}
+
+/* ---- level complete ---- */
+async function finishLevel() {
+  var stars = G.mistakes <= 1 ? 3 : G.mistakes <= 3 ? 2 : 1, tok = ++G.token;
+  progress.stars[G.li] = Math.max(progress.stars[G.li] || 0, stars); saveProgress();
+  var last = G.li === LEVELS.length - 1;
+  $('#doneTitle').textContent = last ? 'You did them all!' : 'Level ' + (G.li + 1) + ' complete!';
+  $('#doneSub').textContent = G.L.name;
+  $('#doneStars').innerHTML = I.starOn + I.starOn + I.starOn;
+  $('#doneNext').hidden = last;
+  var retry = stars === 1 && !last;
+  $('#doneAgain').className = 'btn ' + (retry ? 'btn-go' : 'btn-soft');
+  $('#doneNext').className = 'btn ' + (retry ? 'btn-soft' : 'btn-go');
+  $('#doneOverlay').hidden = false;
+  Sound.sfx.fanfare(); Lulu.mood('happy', 2600);
+  var keys = ['done' + stars]; if (last) keys.push('all_done');
+  Sound.say(keys);
+  var svgs = $$('#doneStars svg');
+  for (var i = 0; i < stars; i++) { await sleep(450); if (tok !== G.token) return; svgs[i].classList.add('lit'); Sound.sfx.star(i); burstEl(svgs[i], 10); }
+  setTimeout(function () { var nb = last ? $('#doneMap') : retry ? $('#doneAgain') : $('#doneNext'); try { nb.focus({ preventScroll: true }); } catch (e) {} }, 300);
+}
+$('#doneMap').onclick = function () { G.token++; Sound.stopVoice(); $('#doneOverlay').hidden = true; showScreen('scrMap'); };
+$('#doneAgain').onclick = function () { startLevel(G.li); };
+$('#doneNext').onclick = function () { if (G.li + 1 < LEVELS.length) startLevel(G.li + 1); };
+$('#doneNext').innerHTML = 'Next level ' + I.right;
+
+updateToggles();
+// expose a tiny hook for automated checks
+window.__lulu = { G: G, Clock: Clock, startLevel: startLevel, LINES: LINES, LEVELS: LEVELS };
+})();
+</script>
+</body>
+</html>
